@@ -1,4 +1,4 @@
 [[redirects]]
   from = "/*"
-  to = "/main.ts"
+  to = "/src/main.ts"
   status = 200
