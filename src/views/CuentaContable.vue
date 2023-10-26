@@ -21,7 +21,7 @@
       header="Header"
       :style="{ width: '45vw' }"
     >
-      <form action="" @submit="onSubmit">
+      <form action="">
         <div class="w-full formgroup-inline justify-content-evenly pl-2 pr-2">
           <div>
             <label for="codigo" class="block text-900 font-medium mb-2">
@@ -32,13 +32,13 @@
                 placeholder="Código"
                 id="codigo"
                 name="codigo"
-                :class="{ 'p-invalid': codigoError }"
-                :error="codigoError"
+                :class="{ 'p-invalid': codigoEvents.codigoError }"
+                :error="codigoEvents.codigoError"
                 aria-describedby="text-error"
-                v-model="codigoValue"
+                v-model="codigoEvents.codigoValue"
               ></v-inputtext>
               <small id="text-error" class="p-error">{{
-                codigoError || "&nbsp;"
+                codigoErrorMessage || "&nbsp;"
               }}</small>
             </div>
           </div>
@@ -51,13 +51,13 @@
                 placeholder="Título"
                 id="titulo"
                 name="titulo"
-                :class="{ 'p-invalid': tituloError }"
-                :error="tituloError"
+                :class="{ 'p-invalid': tituloEvents.tituloError }"
+                :error="tituloEvents.tituloError"
                 aria-describedby="text-error"
-                v-model="tituloValue"
+                v-model="tituloEvents.tituloValue"
               ></v-inputtext>
               <small id="text-error" class="p-error">{{
-                tituloError || "&nbsp;"
+                tituloErrorMessage || "&nbsp;"
               }}</small>
             </div>
           </div>
@@ -71,14 +71,14 @@
             id="detalle"
             name="detalle"
             class="w-full"
-            v-model="detalleValue"
+            v-model="detalleEvents.detalleValue"
           ></v-textarea>
         </div>
-        <div class="w-full flex justify-content-evenly pl-2 pr-2 mt-4">
-          <v-button type="submit" label="Ingresar"></v-button>
-          <v-button label="Cancelar" severity="danger"></v-button>
-        </div>
       </form>
+      <div class="w-full flex justify-content-evenly pl-2 pr-2 mt-4">
+        <v-button type="submit" label="Ingresar" @click="onSubmit()"></v-button>
+        <v-button label="Cancelar" severity="danger"></v-button>
+      </div>
     </v-dialog>
   </div>
 </template>
@@ -86,8 +86,7 @@
 // import { CuentasService } from "../services/cuentas.service";
 import { Cuenta } from "@/models/cuenta";
 import CuentasService from "@/services/cuentas.service";
-import { useField, useForm } from "vee-validate";
-import { defineComponent, ref } from "vue";
+import { computed, defineComponent, reactive, ref } from "vue";
 export default defineComponent({
   name: "cuenta-contable",
   data() {
@@ -97,38 +96,61 @@ export default defineComponent({
   },
   setup() {
     let products = ref([{}]);
-    const { handleSubmit, resetForm } = useForm();
-    const { value: codigoValue, errorMessage: codigoError } = useField(
-      "codigo",
-      validateField
-    );
-    const { value: tituloValue, errorMessage: tituloError } = useField(
-      "titulo",
-      validateField
-    );
-    const { value: detalleValue } = useField("detalle");
 
-    function validateField(value: unknown) {
-      console.log(value);
-      if (typeof value === "undefined" || value === "") {
-        return "Este valor es requerido.";
-      }
+    const codigoEvents = reactive({
+      codigoValue: "",
+      codigoError: "",
+    });
+    const detalleEvents = reactive({
+      detalleValue: "",
+      detalleError: "",
+    });
+    const tituloEvents = reactive({
+      tituloValue: "",
+      tituloError: "",
+    });
 
-      return true;
-    }
+    const codigoErrorMessage = computed(() => {
+      if (codigoEvents.codigoError !== "") {
+        return codigoEvents.codigoError;
+      } else return "";
+    });
+
+    const tituloErrorMessage = computed(() => {
+      if (tituloEvents.tituloError !== "") {
+        return tituloEvents.tituloError;
+      } else return "";
+    });
+    const detalleErrorMessage = computed(() => {
+      if (detalleEvents.detalleError !== "") {
+        return detalleEvents.detalleError;
+      } else return "";
+    });
+
     const saveCuenta = async (cuenta: Cuenta) => {
       const response = await CuentasService.saveAccount(cuenta);
       console.log(response);
     };
+    const resetForm = () => {
+      detalleEvents.detalleValue = "";
+      codigoEvents.codigoValue = "";
+      tituloEvents.tituloValue = "";
+      codigoEvents.codigoError = "";
+      detalleEvents.detalleError = "";
+      tituloEvents.tituloError = "";
+    };
 
-    const onSubmit = handleSubmit(async (values) => {
-      console.log(values);
-      let cuenta: Cuenta = new Cuenta(
-        values.codigo,
-        values.titulo,
-        values.detalle
-      );
-      if (values.codigo !== "" && values.titulo !== "") {
+    const onSubmit = async () => {
+      if (
+        codigoEvents.codigoValue !== "" &&
+        detalleEvents.detalleValue !== "" &&
+        tituloEvents.tituloValue !== ""
+      ) {
+        let cuenta: Cuenta = new Cuenta(
+          codigoEvents.codigoValue,
+          tituloEvents.tituloValue,
+          detalleEvents.detalleValue
+        );
         await saveCuenta(cuenta)
           .then((data) => {
             console.log(data);
@@ -138,17 +160,17 @@ export default defineComponent({
           .catch((err) => console.log(err));
         resetForm();
       }
-    });
+    };
 
     return {
-      codigoValue,
-      handleSubmit,
+      codigoEvents,
       onSubmit,
-      codigoError,
-      tituloValue,
-      tituloError,
-      detalleValue,
+      tituloEvents,
+      detalleEvents,
       products,
+      codigoErrorMessage,
+      tituloErrorMessage,
+      detalleErrorMessage,
     };
   },
   methods: {
