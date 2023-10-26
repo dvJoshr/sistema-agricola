@@ -6,7 +6,6 @@ export default {
   },
 
   async saveAccount(account: Cuenta) {
-    console.log(account);
     return await api().post("account", account);
   },
 };

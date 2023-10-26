@@ -1,5 +1,6 @@
 import { Transaction } from "@/models/Transaction";
 import { libro } from "@/models/libro";
+import { Mayorizacion } from "@/models/mayorizacion";
 import api from "./Api.service";
 export default {
   getBooks() {
@@ -23,5 +24,12 @@ export default {
 
   async getBooksByIdAndCuenta(id: string, cuenta: string) {
     return await api().get(`details/books/${id}&${cuenta}`);
+  },
+  async updateBooksDetails(id: string, cuenta: string, estado: boolean) {
+    return await api().put(`details/${id}&${cuenta}&${estado}`);
+  },
+
+  async saveMayorizacion(model: Mayorizacion) {
+    return await api().post("mayorizacion", model);
   },
 };

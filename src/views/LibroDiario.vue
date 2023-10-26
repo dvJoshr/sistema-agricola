@@ -1,5 +1,6 @@
 <template>
-  <v-panel header="Libro diario" class="pr-3 pl-3">
+  <v-panel header="Libro diario" class="ml-3">
+    <v-toast />
     <template #icons>
       <button
         class="p-panel-header-icon p-link mr-2"
@@ -53,7 +54,7 @@
         :value="details"
         paginator
         :rows="6"
-        class="p-datatable-sm"
+        class="p-datatable-sm m-2"
       >
         <v-datatable-column
           field="daily_book_id_fk"
@@ -437,8 +438,8 @@ import { Cuenta } from "@/models/cuenta";
 import { libro } from "@/models/libro";
 import cuentasService from "@/services/cuentas.service";
 import librosSevice from "@/services/libros.service";
+import { useToast } from "primevue/usetoast";
 import { computed, defineComponent, reactive, ref } from "vue";
-
 class cuentaAux {
   name = "";
   code = "";
@@ -451,6 +452,7 @@ class Transaction {
   haber = 0;
   referencia = "";
   fecha = "";
+  estado = true;
   /**
    *
    */
@@ -461,7 +463,8 @@ class Transaction {
     debe: number,
     haber: number,
     referencia: string,
-    fecha: string
+    fecha: string,
+    estado: boolean
   ) {
     this.daily_book_id_fk = daily_book_id_fk;
     this.codigo_chartaccount = codigo_chartaccount;
@@ -470,6 +473,7 @@ class Transaction {
     this.haber = haber;
     this.referencia = referencia;
     this.fecha = fecha;
+    this.estado = estado;
   }
 }
 
@@ -486,8 +490,8 @@ export default defineComponent({
 
     let transaccionList = ref<Transaction[]>([]);
     let book = ref<libro>(new libro("", "", "", ""));
-
-    let details = ref([]);
+    const toast = useToast();
+    let details = ref([{}]);
     let mostrar = ref(false);
     let visible = ref(false);
     let libroDetail: [] = [];
@@ -511,10 +515,9 @@ export default defineComponent({
         fechaEvents.fechaValue !== "" &&
         tituloEvents.tituloValue !== ""
       ) {
-        const fecha = new Date(fechaEvents.fechaValue);
-        let dateFormat = `${fecha.getFullYear()}-${fecha.getMonth() + 1}-${
-          fecha.getDay() + 1
-        }`;
+        let fecha = new Date(fechaEvents.fechaValue);
+        let fechaSeteada: any = fecha.toLocaleDateString().match(/([1-9])\w+/g);
+        let dateFormat = `${fechaSeteada[2]}-${fechaSeteada[0]}-${fechaSeteada[1]}`;
         book.value = new libro(
           codigoEvents.codigoValue,
           temaEvents.temaValue,
@@ -537,6 +540,15 @@ export default defineComponent({
             tituloEvents.tituloValue
           )
         );
+        toast.add({
+          severity: "success",
+          summary: "Success Message",
+          detail: "El libro se guardo correctamente",
+          life: 3000,
+        });
+        dateFormat = "";
+
+        limpiar();
       } else {
         if (codigoEvents.codigoValue === "") {
           codigoEvents.codigoError = "Este campo es requerido";
@@ -559,6 +571,13 @@ export default defineComponent({
           tituloEvents.tituloError = "";
         }
       }
+    };
+
+    const limpiar = () => {
+      codigoEvents.codigoValue = `libro_${libros.value.length}`;
+      temaEvents.temaValue = "";
+
+      tituloEvents.tituloValue = "";
     };
 
     const codigoErrorMessage = computed(() => {
@@ -684,14 +703,9 @@ export default defineComponent({
       ) {
         console.log(fechaTransaccionEvents.fechaTransaccionValue);
         let fecha = new Date(fechaTransaccionEvents.fechaTransaccionValue);
-        console.log(fecha.toLocaleDateString().match(/([1-9])\w+/g));
+        let fechaSeteada: any = fecha.toLocaleDateString().match(/([1-9])\w+/g);
+        let dateFormat = `${fechaSeteada[2]}-${fechaSeteada[0]}-${fechaSeteada[1]}`;
 
-        let dateFormat = `${fecha.getFullYear()}-${fecha.getMonth() + 1}-${
-          fecha.getDay() + 1
-        }`;
-
-        console.log(fecha.getMonth() + 1, fecha.getDay());
-        console.log(dateFormat);
         transaccionList.value.push(
           new Transaction(
             daily_book_id_fkValue.value,
@@ -700,9 +714,16 @@ export default defineComponent({
             debeEvents.debeTransaccionValue,
             haberEvents.haberTransaccionValue,
             referenciaEvents.referenciaTransaccionValue,
-            dateFormat
+            dateFormat,
+            true
           )
         );
+        toast.add({
+          severity: "success",
+          summary: "Success Message",
+          detail: "Transacción agregada",
+          life: 3000,
+        });
 
         cancelarTransaction();
       }
@@ -716,7 +737,20 @@ export default defineComponent({
     };
 
     const guardarDetail = () => {
-      librosSevice.saveTransaccion(transaccionList.value);
+      librosSevice.saveTransaccion(transaccionList.value).then(() => {
+        toast.add({
+          severity: "success",
+          summary: "Success Message",
+          detail: "Se guardaros las transacciones correctamente",
+          life: 3000,
+        });
+        dialogDetail.value = false;
+
+        transaccionList.value.forEach((elem: any) => {
+          details.value.push(elem);
+        });
+        transaccionList.value = [];
+      });
     };
     return {
       fechaTransaccionEvents,
@@ -774,7 +808,6 @@ export default defineComponent({
           };
           this.listaCuentas.push(this.cuentas);
         });
-        console.log(response.data);
       });
     },
     async getBooks() {
@@ -782,7 +815,6 @@ export default defineComponent({
         this.libros = response.data;
 
         this.codigoEvents.codigoValue = `libro_${this.libros.length}`;
-        console.log(response.data);
       });
     },
     openDialogDetail() {
@@ -794,7 +826,6 @@ export default defineComponent({
         .getBooksDetails(item.daily_book_id)
         .then((response) => {
           this.details = response.data;
-          console.log(this.details);
           this.mostrar = true;
         })
         .catch((err) => console.log(err));

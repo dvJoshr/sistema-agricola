@@ -1,10 +1,15 @@
 <template>
   <div class="h-full m-2 bg-white border-round-md pb-1">
     <TopMenu />
-    <div class="">
-      <SideBar class="static" />
-      <div class="absolute m-2 pt-2 layout-content app-layout__page">
-        <router-view />
+    <div
+      class="overflow: hidden;"
+      style="height: calc(100vh - 4.5rem) !important"
+    >
+      <div class="flex relative lg:static surface-ground">
+        <SideBar />
+        <div class="flex flex-column relative flex-auto m-2">
+          <router-view />
+        </div>
       </div>
     </div>
   </div>

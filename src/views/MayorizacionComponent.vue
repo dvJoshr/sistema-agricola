@@ -27,14 +27,14 @@
 
       <div v-if="!mostrarLibros">
         <v-button
-          label="Nuevo componente"
+          label="Generar Mayorización"
           @click="showFormCuenta"
           text
         ></v-button>
         <div v-for="componente in components" :key="componente">
           <componenteTable
             :idLibro="idLibro"
-            :codigo="cuentaValue.codigo_chartaccount"
+            :codigo="cuentaValor"
           ></componenteTable>
         </div>
       </div>
@@ -69,6 +69,7 @@
                 name="cuentaid"
                 placeholder="Cuentas contables"
                 id="cuentaid"
+                showClear
                 :options="listaCuentas"
                 optionLabel="codigo_chartaccount"
                 class="w-full md:w-14rem"
@@ -79,7 +80,7 @@
         </form>
         <div>
           <v-button
-            label="Generar Mayorización"
+            label="Generar"
             text
             @click="getBooksMayor(idLibro, cuentaValue.codigo_chartaccount)"
           ></v-button>
@@ -93,7 +94,7 @@
 import { libro } from "@/models/libro";
 import librosSevice from "@/services/libros.service";
 import componenteTable from "@/views/componentes/componente-table.vue";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 export default {
   components: { componenteTable },
   setup() {
@@ -105,6 +106,7 @@ export default {
     let libroValue = ref("");
     let listaCuentas = ref([]);
     let cuentaValue = ref({ codigo_chartaccount: "" });
+    let cuentaValor = ref("");
     const showFormCuenta = () => {
       mostrar.value = true;
     };
@@ -115,22 +117,22 @@ export default {
     const getBooks = () => {
       librosSevice.getBooks().then((response) => {
         listaLibros.value = response.data;
-
-        console.log(response.data);
       });
     };
 
     const getItem = (item: libro) => {
       idLibro.value = item.daily_book_id;
       librosSevice.getCuentas(item.daily_book_id).then((response) => {
-        listaCuentas.value = response.data;
+        listaCuentas.value = response.data.map((cuenta: any) => {
+          if (cuenta.estado) {
+            return cuenta;
+          }
+        });
+        mostrarLibros.value = false;
       });
-
-      mostrarLibros.value = false;
     };
 
     const getBooksMayor = (id: string, cuenta: string) => {
-      console.log(cuenta);
       // librosSevice.getBooksByIdAndCuenta(id, cuenta).then((response) => {
       //   let respuesta = response.data;
       //   let credito = 0;
@@ -151,8 +153,19 @@ export default {
       //   }
       // });
       components.value.push("componenteTable");
+      listaCuentas.value = listaCuentas.value.filter(
+        (cuentas: any) => cuentas.codigo_chartaccount !== cuenta
+      );
+      cuentaValor.value = cuenta;
+      cuentaValue.value = {
+        codigo_chartaccount: "",
+      };
+      console.log("Cuentas", listaCuentas.value);
     };
 
+    const accounts = computed(() => {
+      return listaCuentas;
+    });
     onMounted(() => {
       getBooks();
     });
@@ -170,6 +183,7 @@ export default {
       getItem,
       getBooksMayor,
       addMayorizacionPorCuenta,
+      cuentaValor,
     };
   },
 };

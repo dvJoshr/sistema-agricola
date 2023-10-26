@@ -1,5 +1,6 @@
 <template>
   <v-panel header="Cuenta contable">
+    <v-toast />
     <div>
       <v-button label="Agregar" size="small" @click="visible = true"></v-button>
     </div>
@@ -86,6 +87,8 @@
 // import { CuentasService } from "../services/cuentas.service";
 import { Cuenta } from "@/models/cuenta";
 import CuentasService from "@/services/cuentas.service";
+import { useToast } from "primevue/usetoast";
+
 import { computed, defineComponent, reactive, ref } from "vue";
 export default defineComponent({
   name: "cuenta-contable",
@@ -96,6 +99,7 @@ export default defineComponent({
   },
   setup() {
     let products = ref([{}]);
+    const toast = useToast();
 
     const codigoEvents = reactive({
       codigoValue: "",
@@ -129,7 +133,6 @@ export default defineComponent({
 
     const saveCuenta = async (cuenta: Cuenta) => {
       const response = await CuentasService.saveAccount(cuenta);
-      console.log(response);
     };
     const resetForm = () => {
       detalleEvents.detalleValue = "";
@@ -153,7 +156,12 @@ export default defineComponent({
         );
         await saveCuenta(cuenta)
           .then((data) => {
-            console.log(data);
+            toast.add({
+              severity: "success",
+              summary: "Success Message",
+              detail: "La cuenta se guardo correctamente",
+              life: 3000,
+            });
             products.value.push(cuenta);
             resetForm();
           })

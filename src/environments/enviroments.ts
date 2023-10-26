@@ -1,6 +1,6 @@
 export const environment = {
-  HOST_API: "api-service-sistema.onrender.com/api",
+  HOST_API: "localhost:3000/api",
   PORT_API: null,
-  PROTOCOL_API: "https",
+  PROTOCOL_API: "http",
   production: false,
 };
