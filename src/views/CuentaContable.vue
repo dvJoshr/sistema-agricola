@@ -124,9 +124,9 @@ export default defineComponent({
     const onSubmit = handleSubmit(async (values) => {
       console.log(values);
       let cuenta: Cuenta = new Cuenta(
-        values.codigo ?? "",
-        values.titulo ?? "",
-        values.detalle ?? ""
+        values.codigo,
+        values.titulo,
+        values.detalle
       );
       if (values.codigo !== "" && values.titulo !== "") {
         await saveCuenta(cuenta)

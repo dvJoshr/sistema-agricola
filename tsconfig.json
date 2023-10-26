@@ -33,7 +33,6 @@
     "node_modules/vee-validate/node_modules/type-fest/source/join.d.ts",
     "node_modules/vee-validate/node_modules/type-fest/source/join.d.ts",
     "node_modules/vee-validate/node_modules/type-fest/source/join.d.ts",
-    "node_modules/vee-validate/node_modules/type-fest/source/set-parameter-type.d.ts",
-    
+    "node_modules/vee-validate/node_modules/type-fest/source/set-parameter-type.d.ts"
   ]
 }
