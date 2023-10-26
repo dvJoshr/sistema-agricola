@@ -1,5 +1,5 @@
 export const environment = {
-  HOST_API: "master--idyllic-speculoos-4c3f40.netlify.app/api",
+  HOST_API: "tubular-naiad-61d03c.netlify.app/api",
   PORT_API: null,
   PROTOCOL_API: "https",
   production: false,
