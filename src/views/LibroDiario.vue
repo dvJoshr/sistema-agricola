@@ -188,7 +188,6 @@
         :draggable="false"
         v-model:visible="dialogDetail"
         modal
-        (onhide)
         :style="{ width: '65vw' }"
       >
         <template #header>
