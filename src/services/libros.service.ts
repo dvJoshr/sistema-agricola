@@ -10,6 +10,7 @@ export default {
   async getBooksDetails(id: string) {
     return await api().get(`details/${id}`);
   },
+
   async saveBook(model: libro) {
     return await api().post("/books", model);
   },
@@ -25,6 +26,7 @@ export default {
   async getBooksByIdAndCuenta(id: string, cuenta: string) {
     return await api().get(`details/books/${id}&${cuenta}`);
   },
+
   async updateBooksDetails(id: string, cuenta: string, estado: boolean) {
     return await api().put(`details/${id}&${cuenta}&${estado}`);
   },

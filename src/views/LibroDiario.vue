@@ -1,5 +1,5 @@
 <template>
-  <v-panel header="Libro diario" class="ml-3">
+  <v-panel header="Libro diario">
     <v-toast />
     <template #icons>
       <button
@@ -20,10 +20,7 @@
       ></v-button>
     </div>
     <!-- Mostrar libros -->
-    <div
-      class="flex flex-row bg-green-300 justify-content-evenly flex-wrap"
-      v-if="!mostrar"
-    >
+    <div class="flex flex-row justify-content-start flex-wrap" v-if="!mostrar">
       <div
         v-for="libroItem in libros"
         :key="libroItem.daily_book_id"
@@ -82,6 +79,7 @@
       <v-dialog
         v-model:visible="visible"
         modal
+        :draggable="false"
         header="Ingresar Libro Diario"
         :style="{ width: '35vw' }"
       >
@@ -187,14 +185,13 @@
     <!-- Ingresar detalle -->
     <div>
       <v-dialog
+        :draggable="false"
         v-model:visible="dialogDetail"
         modal
-        header="Header"
         :style="{ width: '65vw' }"
       >
         <template #header>
           <div class="flex flex-wrap justify-content-end mb-2">
-            <v-button label="Guardar Transacciones" @click="guardarDetail()" />
             <v-button
               class="ml-6"
               label="Ingresar"
@@ -234,6 +231,11 @@
             ></v-datatable-column>
           </v-datatable-table>
         </div>
+        <template #footer>
+          <div class="flex flex-row justify-content-start">
+            <v-button label="Guardar Transacciones" @click="guardarDetail()" />
+          </div>
+        </template>
       </v-dialog>
     </div>
 
@@ -241,7 +243,8 @@
       <v-dialog
         v-model:visible="dialogDeailInsert"
         modal
-        header="Header"
+        :draggable="false"
+        header="Libro diario"
         :style="{ width: '40vw' }"
       >
         <form action="">
@@ -405,7 +408,9 @@
                   id="fechaTransaccion"
                   name="fechaTransaccion"
                   class="w-full md:w-14rem"
-                  :class="{ 'p-invalid': fechaEvents.fechaError }"
+                  :class="{
+                    'p-invalid': fechaTransaccionEvents.fechaTransaccionError,
+                  }"
                   aria-describedby="text-error"
                   :error="fechaTransaccionEvents.fechaTransaccionError"
                 />
@@ -420,7 +425,7 @@
         <div class="w-full flex justify-content-evenly pl-2 pr-2 mt-4">
           <v-button
             type="submit"
-            label="Ingresar 1"
+            label="Guardar"
             @click="onSubmitTransaccion()"
           ></v-button>
           <v-button
@@ -479,7 +484,6 @@ class Transaction {
 
 export default defineComponent({
   setup() {
-    let abrir = ref(false);
     let libros = ref<libro[]>([]);
     let temaError = ref("");
     let fechaLibroValue = ref(null);
@@ -576,7 +580,6 @@ export default defineComponent({
     const limpiar = () => {
       codigoEvents.codigoValue = `libro_${libros.value.length}`;
       temaEvents.temaValue = "";
-
       tituloEvents.tituloValue = "";
     };
 
@@ -587,7 +590,6 @@ export default defineComponent({
     });
 
     const cancelar = () => {
-      codigoEvents.codigoValue = "";
       codigoEvents.codigoError = "";
       temaEvents.temaValue = "";
       temaEvents.temaError = "";
@@ -699,7 +701,8 @@ export default defineComponent({
         daily_book_id_fkValue.value !== "" &&
         cuentaEvent.cuentaValue.code !== "" &&
         detalleEvents.detalleTransaccionValue !== "" &&
-        referenciaEvents.referenciaTransaccionValue !== ""
+        referenciaEvents.referenciaTransaccionValue !== "" &&
+        fechaTransaccionEvents.fechaTransaccionValue !== ""
       ) {
         console.log(fechaTransaccionEvents.fechaTransaccionValue);
         let fecha = new Date(fechaTransaccionEvents.fechaTransaccionValue);
@@ -725,38 +728,83 @@ export default defineComponent({
           life: 3000,
         });
 
-        cancelarTransaction();
+        limpiarForm();
+      } else {
+        // if (cuentaEvent.cuentaValue.code === "") {
+        //   cuentaEvent.cuentaError = "Este campo es requerido";
+        // } else {
+        //   cuentaEvent.cuentaError = "";
+        // }
+        // if (detalleEvents.detalleTransaccionValue === "") {
+        //   detalleEvents.detalleTransaccionError = "Este campo es requerido";
+        // } else {
+        //   detalleEvents.detalleTransaccionError = "";
+        // }
+        // if (referenciaEvents.referenciaTransaccionValue === "") {
+        //   referenciaEvents.referenciaTransaccionError =
+        //     "Este campo es requerido";
+        // } else {
+        //   referenciaEvents.referenciaTransaccionError = "";
+        // }
+        // if (fechaTransaccionEvents.fechaTransaccionValue === "") {
+        //   fechaTransaccionEvents.fechaTransaccionError =
+        //     "Este campo es requerido";
+        // } else {
+        //   fechaTransaccionEvents.fechaTransaccionError = "";
+        // }
       }
     };
-    const cancelarTransaction = () => {
+    const limpiarForm = () => {
       cuentaEvent.cuentaValue = { name: "", code: "" };
       detalleEvents.detalleTransaccionValue = "";
       haberEvents.haberTransaccionValue = 0;
       debeEvents.debeTransaccionValue = 0;
       fechaTransaccionEvents.fechaTransaccionValue = "";
     };
+    const cancelarTransaction = () => {
+      limpiarForm();
+      dialogDeailInsert.value = false;
+    };
 
     const guardarDetail = () => {
-      librosSevice.saveTransaccion(transaccionList.value).then(() => {
+      if (transaccionList.value.length > 0) {
+        librosSevice
+          .saveTransaccion(transaccionList.value)
+          .then(() => {
+            toast.add({
+              severity: "success",
+              summary: "Success Message",
+              detail: "Se guardaros las transacciones correctamente",
+              life: 3000,
+            });
+            dialogDetail.value = false;
+
+            transaccionList.value.forEach((elem: any) => {
+              details.value.push(elem);
+            });
+            transaccionList.value = [];
+          })
+          .catch(() => {
+            toast.add({
+              severity: "error",
+              summary: "Error",
+              detail: "Ocurrio un error, revisar las transacciones",
+              life: 3000,
+            });
+          });
+      } else {
         toast.add({
-          severity: "success",
-          summary: "Success Message",
-          detail: "Se guardaros las transacciones correctamente",
+          severity: "error",
+          summary: "Error",
+          detail: "No ha ingresado transacciones",
           life: 3000,
         });
-        dialogDetail.value = false;
-
-        transaccionList.value.forEach((elem: any) => {
-          details.value.push(elem);
-        });
-        transaccionList.value = [];
-      });
+      }
     };
     return {
       fechaTransaccionEvents,
       fechaTransaccionErrorMessage,
       guardarDetail,
-      cancelarTransaction,
       onSubmitTransaccion,
       cuentaEvent,
       cuentaErroMessage,
@@ -796,6 +844,7 @@ export default defineComponent({
       cuentas,
       listaCuentas,
       transaccionList,
+      cancelarTransaction,
     };
   },
   methods: {

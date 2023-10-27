@@ -8,7 +8,6 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 // import { CuentasService } from "./services/cuentas.service";
-import "primeflex/themes/primeone-light.css";
 import Button from "primevue/button";
 import Calendar from "primevue/calendar";
 import Card from "primevue/card";
@@ -16,6 +15,7 @@ import Column from "primevue/column";
 import DataTable from "primevue/datatable";
 import Dialog from "primevue/dialog";
 import Dropdown from "primevue/dropdown";
+import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Menu from "primevue/menu";
 import Panel from "primevue/panel";
@@ -27,8 +27,6 @@ import LayoutContent from "./components/Layout-content.vue";
 import ApiService from "./services/Api.service";
 
 import "/node_modules/primeflex/primeflex.css";
-
-import InputNumber from "primevue/inputnumber";
 
 const app = createApp(App);
 

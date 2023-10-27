@@ -19,8 +19,9 @@
     <v-dialog
       v-model:visible="visible"
       modal
-      header="Header"
+      header="Ingreso de cuenta"
       :style="{ width: '45vw' }"
+      :draggable="false"
     >
       <form action="">
         <div class="w-full formgroup-inline justify-content-evenly pl-2 pr-2">
@@ -74,11 +75,18 @@
             class="w-full"
             v-model="detalleEvents.detalleValue"
           ></v-textarea>
+          <small id="text-error" class="p-error">{{
+            detalleErrorMessage || "&nbsp;"
+          }}</small>
         </div>
       </form>
       <div class="w-full flex justify-content-evenly pl-2 pr-2 mt-4">
         <v-button type="submit" label="Ingresar" @click="onSubmit()"></v-button>
-        <v-button label="Cancelar" severity="danger"></v-button>
+        <v-button
+          label="Cancelar"
+          severity="danger"
+          @click="resetForm()"
+        ></v-button>
       </div>
     </v-dialog>
   </div>
@@ -132,7 +140,7 @@ export default defineComponent({
     });
 
     const saveCuenta = async (cuenta: Cuenta) => {
-      const response = await CuentasService.saveAccount(cuenta);
+      await CuentasService.saveAccount(cuenta);
     };
     const resetForm = () => {
       detalleEvents.detalleValue = "";
@@ -155,7 +163,7 @@ export default defineComponent({
           detalleEvents.detalleValue
         );
         await saveCuenta(cuenta)
-          .then((data) => {
+          .then((data: any) => {
             toast.add({
               severity: "success",
               summary: "Success Message",
@@ -167,6 +175,23 @@ export default defineComponent({
           })
           .catch((err) => console.log(err));
         resetForm();
+      } else {
+        if (codigoEvents.codigoValue === "") {
+          codigoEvents.codigoError = "Este campo es requerido";
+        } else {
+          codigoEvents.codigoError = "";
+        }
+
+        if (tituloEvents.tituloValue === "") {
+          tituloEvents.tituloError = "Este campo es requerido";
+        } else {
+          tituloEvents.tituloError = "";
+        }
+        if (detalleEvents.detalleValue === "") {
+          detalleEvents.detalleError = "Este campo es requerido";
+        } else {
+          detalleEvents.detalleError = "";
+        }
       }
     };
 
@@ -179,6 +204,7 @@ export default defineComponent({
       codigoErrorMessage,
       tituloErrorMessage,
       detalleErrorMessage,
+      resetForm,
     };
   },
   methods: {

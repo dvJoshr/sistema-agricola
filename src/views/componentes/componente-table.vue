@@ -39,68 +39,45 @@ export default defineComponent({
     let codigoPanel = ref({});
     const getBooks = (libro: string, cod: string) => {
       librosService.getBooksByIdAndCuenta(libro, cod).then((response: any) => {
-        // for (let index = 0; index < respuesta.length; index++) {
-        //   if (respuesta[index].debe > 0 && respuesta[index].haber == 0) {
-        //     credito = credito + parseFloat(respuesta[index].debe);
-        //   } else if (
-        //     respuesta[index].debe == 0 &&
-        //     respuesta[index].haber > 0 &&
-        //     credito == 0
-        //   ) {
-        //     acreedor = acreedor + parseFloat(respuesta[index].haber);
-        //   } else if (credito > 0 && respuesta[index].haber > 0) {
-        //     credito = credito - parseFloat(respuesta[index].haber);
-        //   }
-        //   console.log(credito, acreedor);
-        //   let mayor = {
-        //     codigo_chartaccount: respuesta[index].codigo_chartaccount,
-        //     daily_book_id_fk: respuesta[index].daily_book_id_fk,
-        //     debe: respuesta[index].debe,
-        //     detalle: respuesta[index].detalle,
-        //     fecha: respuesta[index].fecha,
-        //     haber: respuesta[index].haber,
-        //     id: respuesta[index].id,
-        //     referencia: respuesta[index].referencia,
-        //     creedito: credito,
-        //     acreedor: acreedor,
-        //   };
-        //   mayorizacionList.value.push(mayor);
-        // }
         mayorizacionList.value = response.data;
-        response.data.forEach((movimiento: any) => {
-          saldoMayorizacion.value += movimiento.debito - movimiento.credito;
-        });
+        if (response.data.length > 0) {
+          response.data.forEach((movimiento: any) => {
+            saldoMayorizacion.value += movimiento.debito - movimiento.credito;
+          });
 
-        if (saldoMayorizacion.value > 0) {
-          deudor.value = saldoMayorizacion.value;
-        } else if (saldoMayorizacion.value < 0) {
-          acreedor.value = saldoMayorizacion.value;
-        } else {
-          deudor.value = 0;
-          acreedor.value = 0;
+          if (saldoMayorizacion.value > 0) {
+            deudor.value = saldoMayorizacion.value;
+          } else if (saldoMayorizacion.value < 0) {
+            acreedor.value = saldoMayorizacion.value;
+          } else {
+            deudor.value = 0;
+            acreedor.value = 0;
+          }
+          let mayor = {
+            codigo_chartaccount: "",
+            daily_book_id_fk: "",
+            debe: deudor.value,
+            detalle: "Resultado",
+            fecha: "",
+            haber: acreedor.value,
+            id: "",
+            referencia: "",
+          };
+          librosService
+            .updateBooksDetails(libro, cod, true)
+            .then((response) => {
+              console.log(response);
+            });
+          let mayorizacion = {
+            daily_book_id_fk: libro,
+            codigo_chartAccount: props.codigo,
+            referencia: response.data[0].referencia,
+            deudor: deudor.value,
+            acreedor: acreedor.value,
+          };
+          librosService.saveMayorizacion(mayorizacion);
+          mayorizacionList.value.push(mayor);
         }
-        let mayor = {
-          codigo_chartaccount: "",
-          daily_book_id_fk: "",
-          debe: deudor.value,
-          detalle: "Resultado",
-          fecha: "",
-          haber: acreedor.value,
-          id: "",
-          referencia: "",
-        };
-        librosService.updateBooksDetails(libro, cod, true).then((response) => {
-          console.log(response);
-        });
-        let mayorizacion = {
-          daily_book_id_fk: libro,
-          codigo_chartAccount: props.codigo,
-          referencia: response.data[0].referencia,
-          deudor: deudor.value,
-          acreedor: acreedor.value,
-        };
-        librosService.saveMayorizacion(mayorizacion);
-        mayorizacionList.value.push(mayor);
       });
 
       codigoPanel.value = props.codigo;
@@ -117,4 +94,32 @@ export default defineComponent({
     };
   },
 });
+
+// for (let index = 0; index < respuesta.length; index++) {
+//   if (respuesta[index].debe > 0 && respuesta[index].haber == 0) {
+//     credito = credito + parseFloat(respuesta[index].debe);
+//   } else if (
+//     respuesta[index].debe == 0 &&
+//     respuesta[index].haber > 0 &&
+//     credito == 0
+//   ) {
+//     acreedor = acreedor + parseFloat(respuesta[index].haber);
+//   } else if (credito > 0 && respuesta[index].haber > 0) {
+//     credito = credito - parseFloat(respuesta[index].haber);
+//   }
+//   console.log(credito, acreedor);
+//   let mayor = {
+//     codigo_chartaccount: respuesta[index].codigo_chartaccount,
+//     daily_book_id_fk: respuesta[index].daily_book_id_fk,
+//     debe: respuesta[index].debe,
+//     detalle: respuesta[index].detalle,
+//     fecha: respuesta[index].fecha,
+//     haber: respuesta[index].haber,
+//     id: respuesta[index].id,
+//     referencia: respuesta[index].referencia,
+//     creedito: credito,
+//     acreedor: acreedor,
+//   };
+//   mayorizacionList.value.push(mayor);
+// }
 </script>

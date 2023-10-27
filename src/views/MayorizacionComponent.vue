@@ -1,8 +1,20 @@
 <template>
   <div>
     <v-panel header="Mayorización">
+      <v-toast />
+
+      <template #icons>
+        <button
+          class="p-panel-header-icon p-link mr-2"
+          style="width: 16px; height: 16px !important"
+          @click="backToItems()"
+        >
+          <span class="pi pi-times"></span>
+        </button>
+      </template>
       <div
-        class="flex flex-row bg-green-300 justify-content-evenly flex-wrap"
+        class="flex flex-row justify-content-start flex-wrap"
+        style="calc(100vh - 12rem) !important"
         v-if="mostrarLibros"
       >
         <div
@@ -25,22 +37,52 @@
         </div>
       </div>
 
-      <div v-if="!mostrarLibros">
-        <v-button
-          label="Generar Mayorización"
-          @click="showFormCuenta"
-          text
-        ></v-button>
-        <div v-for="componente in components" :key="componente">
-          <componenteTable
-            :idLibro="idLibro"
-            :codigo="cuentaValor"
-          ></componenteTable>
+      <div
+        v-if="!mostrarLibros"
+        class="table-responsive flex flex-row justify-content-between"
+      >
+        <div class="w-full flex flex-column" style="min-width: 5rem">
+          <div class="flex flex-column">
+            <label for="" class="mb-2">Cuenta Deudora</label>
+            <label for="" class="mb-2 font-semibold">{{ totalDeudor }}</label>
+          </div>
+          <div class="flex flex-column">
+            <label for="" class="mb-2">Cuenta Acreedora</label>
+            <label for="" class="mb-2 font-semibold">{{ totalAcreedor }}</label>
+          </div>
+        </div>
+        <div>
+          <v-datatable-table
+            :value="listaMayorizados"
+            paginator
+            :rows="10"
+            :rowsPerPageOptions="[10, 20, 50]"
+            :class="'p-datatable-sm'"
+            tableStyle="min-width: 50rem"
+          >
+            <v-datatable-column
+              sortable
+              field="cuenta_id"
+              header="Codigo"
+            ></v-datatable-column>
+            <v-datatable-column
+              field="detalle"
+              header="Cuentas"
+            ></v-datatable-column>
+            <v-datatable-column
+              field="deudor"
+              header="Deudor"
+            ></v-datatable-column>
+            <v-datatable-column
+              field="acreedor"
+              header="Acreedor"
+            ></v-datatable-column>
+          </v-datatable-table>
         </div>
       </div>
     </v-panel>
     <div>
-      <v-dialog
+      <!-- <v-dialog
         v-model:visible="mostrar"
         header="Header"
         modal
@@ -85,19 +127,22 @@
             @click="getBooksMayor(idLibro, cuentaValue.codigo_chartaccount)"
           ></v-button>
         </div>
-      </v-dialog>
+      </v-dialog> -->
     </div>
   </div>
 </template>
 
 <script lang="ts">
+import { Cuenta } from "@/models/cuenta";
 import { libro } from "@/models/libro";
+import cuentasServicio from "@/services/cuentas.service";
 import librosSevice from "@/services/libros.service";
-import componenteTable from "@/views/componentes/componente-table.vue";
+import { useToast } from "primevue/usetoast";
 import { computed, onMounted, ref } from "vue";
 export default {
-  components: { componenteTable },
+  components: {},
   setup() {
+    const toast = useToast();
     let mostrarLibros = ref(true);
     let components = ref<string[]>([]);
     let listaLibros = ref<libro[]>([]);
@@ -107,10 +152,12 @@ export default {
     let listaCuentas = ref([]);
     let cuentaValue = ref({ codigo_chartaccount: "" });
     let cuentaValor = ref("");
-    const showFormCuenta = () => {
-      mostrar.value = true;
-    };
-
+    let acreedor = ref(0);
+    let saldoMayorizacion = ref(0);
+    let deudor = ref(0);
+    let listaMayorizados = ref([[]]);
+    let totalAcreedor = ref(0);
+    let totalDeudor = ref(0);
     const addMayorizacionPorCuenta = () => {
       components.value.push("componenteTable");
     };
@@ -122,16 +169,75 @@ export default {
 
     const getItem = (item: libro) => {
       idLibro.value = item.daily_book_id;
-      librosSevice.getCuentas(item.daily_book_id).then((response) => {
-        listaCuentas.value = response.data.map((cuenta: any) => {
-          if (cuenta.estado) {
-            return cuenta;
-          }
+
+      librosSevice
+        .getCuentas(item.daily_book_id)
+        .then((response) => {
+          response.data.forEach((element: any) => {
+            cuentasServicio
+              .getAccountById(element.codigo_chartaccount)
+              .then((cuenta: any) => {
+                if (cuenta.data !== null) {
+                  let account = cuenta.data as Cuenta;
+                  librosSevice
+                    .getBooksByIdAndCuenta(
+                      item.daily_book_id,
+                      element.codigo_chartaccount
+                    )
+                    .then((res) => {
+                      res.data.forEach((elem: any) => {
+                        saldoMayorizacion.value += elem.debe - elem.haber;
+                      });
+                      if (saldoMayorizacion.value > 0) {
+                        deudor.value = saldoMayorizacion.value;
+                      } else if (saldoMayorizacion.value < 0) {
+                        acreedor.value = saldoMayorizacion.value * -1;
+                      } else {
+                        deudor.value = 0;
+                        acreedor.value = 0;
+                      }
+                      let mayor: any = {
+                        cuenta_id: element.codigo_chartaccount,
+                        detalle: account.titulo ?? "",
+                        deudor: deudor.value,
+                        acreedor: acreedor.value,
+                      };
+                      listaMayorizados.value.push(mayor);
+                      totalAcreedor.value =
+                        totalAcreedor.value + acreedor.value;
+                      totalDeudor.value = totalDeudor.value + deudor.value;
+
+                      deudor.value = 0;
+                      acreedor.value = 0;
+                      saldoMayorizacion.value = 0;
+                    });
+                }
+              });
+          });
+          listaMayorizados.value.shift();
+
+          mostrarLibros.value = false;
+        })
+        .catch((error) => {
+          console.log(error);
+          toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "No existen transacciones",
+            life: 3000,
+          });
+          toast.add({
+            severity: "info",
+            summary: "Información",
+            detail: "Por favor, ingrese transacciones",
+            life: 3000,
+          });
         });
-        mostrarLibros.value = false;
-      });
     };
 
+    const showFormCuenta = () => {
+      mostrar.value = true;
+    };
     const getBooksMayor = (id: string, cuenta: string) => {
       // librosSevice.getBooksByIdAndCuenta(id, cuenta).then((response) => {
       //   let respuesta = response.data;
@@ -152,7 +258,7 @@ export default {
       //     console.log(credito, acreedor);
       //   }
       // });
-      components.value.push("componenteTable");
+
       listaCuentas.value = listaCuentas.value.filter(
         (cuentas: any) => cuentas.codigo_chartaccount !== cuenta
       );
@@ -160,9 +266,13 @@ export default {
       cuentaValue.value = {
         codigo_chartaccount: "",
       };
-      console.log("Cuentas", listaCuentas.value);
     };
-
+    const backToItems = () => {
+      mostrarLibros.value = true;
+      listaMayorizados.value = [];
+      totalAcreedor.value = 0;
+      totalDeudor.value = 0;
+    };
     const accounts = computed(() => {
       return listaCuentas;
     });
@@ -184,12 +294,21 @@ export default {
       getBooksMayor,
       addMayorizacionPorCuenta,
       cuentaValor,
+      listaMayorizados,
+      totalDeudor,
+      totalAcreedor,
+      backToItems,
     };
   },
 };
 </script>
 
 <style>
+.p-card {
+  background: #cdfff4;
+}
+.table-responsive {
+}
 .p-card-header {
   text-align: center !important;
   padding-top: 1.5rem;
@@ -200,6 +319,7 @@ export default {
 }
 .p-panel-content {
   background: #f3f3f3;
+  height: calc(100vh - 8.6rem) !important;
 }
 .p-panel-icons {
   height: 16px !important;

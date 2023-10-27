@@ -8,4 +8,8 @@ export default {
   async saveAccount(account: Cuenta) {
     return await api().post("account", account);
   },
+
+  async getAccountById(id: string) {
+    return await api().get(`account/${id}`);
+  },
 };
