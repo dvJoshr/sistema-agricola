@@ -188,6 +188,7 @@
         :draggable="false"
         v-model:visible="dialogDetail"
         modal
+        (onhide)
         :style="{ width: '65vw' }"
       >
         <template #header>
@@ -707,8 +708,8 @@ export default defineComponent({
         console.log(fechaTransaccionEvents.fechaTransaccionValue);
         let fecha = new Date(fechaTransaccionEvents.fechaTransaccionValue);
         let fechaSeteada: any = fecha.toLocaleDateString().match(/([1-9])\w+/g);
-        let dateFormat = `${fechaSeteada[2]}-${fechaSeteada[0]}-${fechaSeteada[1]}`;
-
+        let dateFormat = `${fechaSeteada[2]}-${fechaSeteada[1]}-${fechaSeteada[0]}`;
+        console.log(dateFormat);
         transaccionList.value.push(
           new Transaction(
             daily_book_id_fkValue.value,
