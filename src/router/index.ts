@@ -30,6 +30,11 @@ const routes: Array<RouteRecordRaw> = [
             name: "mayorizacion",
             component: () => import("../views/MayorizacionComponent.vue"),
           },
+          {
+            path: "estados-financieros",
+            name: "estados-financieros",
+            component: () => import("../views/EstadosFinancieros.vue"),
+          },
         ],
       },
     ],

@@ -12,4 +12,11 @@ export default {
   async getAccountById(id: string) {
     return await api().get(`account/${id}`);
   },
+
+  async updateAccount(cuenta: any) {
+    return await api().put("account", cuenta);
+  },
+  async deleteAccount(id: string) {
+    return await api().delete(`account/${id}`);
+  },
 };

@@ -2,81 +2,43 @@
   <div>
     <v-panel header="Mayorización">
       <v-toast />
-
+      <v-confirm-dialog></v-confirm-dialog>
       <template #icons>
-        <button
-          class="p-panel-header-icon p-link mr-2"
-          style="width: 16px; height: 16px !important"
-          @click="backToItems()"
-        >
+        <button class="p-panel-header-icon p-link mr-2" style="width: 16px; height: 16px !important" @click="backToItems()">
           <span class="pi pi-times"></span>
         </button>
       </template>
-      <div
-        class="flex flex-row justify-content-start flex-wrap"
-        style="calc(100vh - 12rem) !important"
-        v-if="mostrarLibros"
-      >
-        <div
-          v-for="libroItem in listaLibros"
-          :key="libroItem.daily_book_id"
-          class="w-2 m-2"
-          @click="getItem(libroItem)"
-        >
+      <div class="flex flex-row justify-content-start flex-wrap" v-if="mostrarLibros">
+        <div v-for="libroItem in listaLibros" :key="libroItem.daily_book_id" class="w-2 m-2" @click="getItem(libroItem)">
           <!-- @click="getItem(libroItem)" -->
-          <v-card>
+          <v-card class="h-full">
             <template #header>
               <span><i class="pi pi-book" style="font-size: 2rem"></i></span>
             </template>
             <template #content>
-              <span :value="libroItem.daily_book_id"
-                >{{ libroItem.tema }}
-              </span>
+              <span :value="libroItem.daily_book_id">{{ libroItem.tema }} </span>
             </template>
           </v-card>
         </div>
       </div>
-
-      <div
-        v-if="!mostrarLibros"
-        class="table-responsive flex flex-row justify-content-between"
-      >
-        <div class="w-full flex flex-column" style="min-width: 5rem">
-          <div class="flex flex-column">
-            <label for="" class="mb-2">Cuenta Deudora</label>
-            <label for="" class="mb-2 font-semibold">{{ totalDeudor }}</label>
-          </div>
-          <div class="flex flex-column">
-            <label for="" class="mb-2">Cuenta Acreedora</label>
-            <label for="" class="mb-2 font-semibold">{{ totalAcreedor }}</label>
-          </div>
+      <div v-if="!mostrarLibros" class="relative">
+        <div v-if="loading" class="w-full h-full flex justify-center align-items-center absolute bg-white z-5">
+          <v-progress-spinner></v-progress-spinner>
         </div>
         <div>
-          <v-datatable-table
-            :value="listaMayorizados"
-            paginator
-            :rows="10"
-            :rowsPerPageOptions="[10, 20, 50]"
-            :class="'p-datatable-sm'"
-            tableStyle="min-width: 50rem"
-          >
-            <v-datatable-column
-              sortable
-              field="cuenta_id"
-              header="Codigo"
-            ></v-datatable-column>
-            <v-datatable-column
-              field="detalle"
-              header="Cuentas"
-            ></v-datatable-column>
-            <v-datatable-column
-              field="deudor"
-              header="Deudor"
-            ></v-datatable-column>
-            <v-datatable-column
-              field="acreedor"
-              header="Acreedor"
-            ></v-datatable-column>
+          <v-datatable-table :value="listaMayorizados" paginator :rows="20" :rowsPerPageOptions="[10, 20, 50]" :class="'p-datatable-sm'" tableStyle="min-width: 50rem">
+            <v-datatable-column sortable field="cuenta_id" header="Codigo"></v-datatable-column>
+            <v-datatable-column field="detalle" header="Cuentas"></v-datatable-column>
+            <v-datatable-column field="deudor" header="Deudor"></v-datatable-column>
+            <v-datatable-column field="acreedor" header="Acreedor"></v-datatable-column>
+            <v-column-group type="footer">
+              <v-row>
+                <v-datatable-column footer="Total:" :colspan="2" footerStyle="text-align:right"></v-datatable-column>
+                <v-datatable-column :footer="totalDeudor"></v-datatable-column>
+                <v-datatable-column :footer="totalAcreedor"></v-datatable-column>
+                <v-datatable-column> </v-datatable-column>
+              </v-row>
+            </v-column-group>
           </v-datatable-table>
         </div>
       </div>
@@ -137,6 +99,7 @@ import { Cuenta } from "@/models/cuenta";
 import { libro } from "@/models/libro";
 import cuentasServicio from "@/services/cuentas.service";
 import librosSevice from "@/services/libros.service";
+import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { computed, onMounted, ref } from "vue";
 export default {
@@ -158,6 +121,8 @@ export default {
     let listaMayorizados = ref([[]]);
     let totalAcreedor = ref(0);
     let totalDeudor = ref(0);
+    let loading = ref(false);
+    const confirm = useConfirm();
     const addMayorizacionPorCuenta = () => {
       components.value.push("componenteTable");
     };
@@ -167,72 +132,143 @@ export default {
       });
     };
 
-    const getItem = (item: libro) => {
+    const getItem = async (item: libro) => {
       idLibro.value = item.daily_book_id;
+      // const aux: any = [];
+      // await librosSevice
+      //   .getCuentas(item.daily_book_id)
+      //   .then(async (response) => {
+      //     await response.data.forEach(async (element: any) => {
+      //       await cuentasServicio
+      //         .getAccountById(element.codigo_chartaccount)
+      //         .then(async (cuenta: any) => {
+      //           if (cuenta.data !== null) {
+      //             let account = cuenta.data as Cuenta;
+      //             await librosSevice
+      //               .getBooksByIdAndCuenta(
+      //                 item.daily_book_id,
+      //                 element.codigo_chartaccount
+      //               )
+      //               .then((res) => {
+      //                 console.log("Primero");
+      //                 res.data.forEach((elem: any) => {
+      //                   saldoMayorizacion.value += elem.debe - elem.haber;
+      //                 });
+      //                 if (saldoMayorizacion.value > 0) {
+      //                   deudor.value = saldoMayorizacion.value;
+      //                 } else if (saldoMayorizacion.value < 0) {
+      //                   acreedor.value = saldoMayorizacion.value * -1;
+      //                 } else {
+      //                   deudor.value = 0;
+      //                   acreedor.value = 0;
+      //                 }
+      //                 let mayor: any = {
+      //                   cuenta_id: element.codigo_chartaccount,
+      //                   detalle: account.titulo ?? "",
+      //                   deudor: deudor.value,
+      //                   acreedor: acreedor.value,
+      //                 };
+      //                 listaMayorizados.value.push(mayor);
+      //                 totalAcreedor.value =
+      //                   totalAcreedor.value + acreedor.value;
+      //                 totalDeudor.value = totalDeudor.value + deudor.value;
 
-      librosSevice
-        .getCuentas(item.daily_book_id)
-        .then((response) => {
-          response.data.forEach((element: any) => {
-            cuentasServicio
-              .getAccountById(element.codigo_chartaccount)
-              .then((cuenta: any) => {
-                if (cuenta.data !== null) {
-                  let account = cuenta.data as Cuenta;
-                  librosSevice
-                    .getBooksByIdAndCuenta(
-                      item.daily_book_id,
-                      element.codigo_chartaccount
-                    )
-                    .then((res) => {
-                      res.data.forEach((elem: any) => {
-                        saldoMayorizacion.value += elem.debe - elem.haber;
-                      });
-                      if (saldoMayorizacion.value > 0) {
-                        deudor.value = saldoMayorizacion.value;
-                      } else if (saldoMayorizacion.value < 0) {
-                        acreedor.value = saldoMayorizacion.value * -1;
-                      } else {
-                        deudor.value = 0;
-                        acreedor.value = 0;
-                      }
-                      let mayor: any = {
-                        cuenta_id: element.codigo_chartaccount,
-                        detalle: account.titulo ?? "",
-                        deudor: deudor.value,
-                        acreedor: acreedor.value,
-                      };
-                      listaMayorizados.value.push(mayor);
-                      totalAcreedor.value =
-                        totalAcreedor.value + acreedor.value;
-                      totalDeudor.value = totalDeudor.value + deudor.value;
+      //                 deudor.value = 0;
+      //                 acreedor.value = 0;
+      //                 saldoMayorizacion.value = 0;
+      //               });
+      //             console.log("segundo");
+      //           }
+      //         });
+      //       console.log("Tercer");
+      //     });
+      //     console.log("Cuarto");
+      //     listaMayorizados.value.shift();
+      //   })
+      //   .catch((error) => {
+      //     console.log(error);
+      //     toast.add({
+      //       severity: "error",
+      //       summary: "Error",
+      //       detail: "No existen transacciones",
+      //       life: 3000,
+      //     });
+      //     toast.add({
+      //       severity: "info",
+      //       summary: "Información",
+      //       detail: "Por favor, ingrese transacciones",
+      //       life: 3000,
+      //     });
+      //   })
+      //   .finally(() => {
+      //     console.log("Final");
+      //     mostrarLibros.value = false;
+      //   });
+      // console.log("Quinto");
+      try {
+        const response = await librosSevice.getCuentas(item.daily_book_id);
+        const promises = response.data.map(async (element: any) => {
+          const cuenta = await cuentasServicio.getAccountById(element.codigo_chartaccount);
+          if (cuenta.data !== null) {
+            let account = cuenta.data as Cuenta;
+            const res = await librosSevice.getBooksByIdAndCuenta(item.daily_book_id, element.codigo_chartaccount);
+            res.data.forEach((elem: any) => {
+              saldoMayorizacion.value += elem.debe - elem.haber;
+            });
 
-                      deudor.value = 0;
-                      acreedor.value = 0;
-                      saldoMayorizacion.value = 0;
-                    });
-                }
-              });
-          });
-          listaMayorizados.value.shift();
+            if (saldoMayorizacion.value > 0) {
+              deudor.value = saldoMayorizacion.value;
+            } else if (saldoMayorizacion.value < 0) {
+              acreedor.value = saldoMayorizacion.value * -1;
+            } else {
+              deudor.value = 0;
+              acreedor.value = 0;
+            }
 
-          mostrarLibros.value = false;
-        })
-        .catch((error) => {
-          console.log(error);
+            let mayor: any = {
+              cuenta_id: element.codigo_chartaccount,
+              detalle: account.titulo ?? "",
+              deudor: deudor.value,
+              acreedor: acreedor.value,
+            };
+
+            listaMayorizados.value.push(mayor);
+            totalAcreedor.value += acreedor.value;
+            totalDeudor.value += deudor.value;
+
+            deudor.value = 0;
+            acreedor.value = 0;
+            saldoMayorizacion.value = 0;
+          }
+        });
+
+        await Promise.all(promises);
+        listaMayorizados.value.shift();
+        if (listaMayorizados.value.length === 0) {
           toast.add({
             severity: "error",
             summary: "Error",
-            detail: "No existen transacciones",
+            detail: "El libro no contiene transacciones",
             life: 3000,
           });
-          toast.add({
-            severity: "info",
-            summary: "Información",
-            detail: "Por favor, ingrese transacciones",
-            life: 3000,
-          });
+          mostrarLibros.value = true;
+          return;
+        }
+        mostrarLibros.value = false;
+      } catch (error) {
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: "No existen transacciones",
+          life: 3000,
         });
+        toast.add({
+          severity: "info",
+          summary: "Información",
+          detail: "Por favor, ingrese transacciones",
+          life: 3000,
+        });
+      }
     };
 
     const showFormCuenta = () => {
@@ -259,9 +295,7 @@ export default {
       //   }
       // });
 
-      listaCuentas.value = listaCuentas.value.filter(
-        (cuentas: any) => cuentas.codigo_chartaccount !== cuenta
-      );
+      listaCuentas.value = listaCuentas.value.filter((cuentas: any) => cuentas.codigo_chartaccount !== cuenta);
       cuentaValor.value = cuenta;
       cuentaValue.value = {
         codigo_chartaccount: "",
@@ -298,6 +332,7 @@ export default {
       totalDeudor,
       totalAcreedor,
       backToItems,
+      loading,
     };
   },
 };
@@ -307,8 +342,7 @@ export default {
 .p-card {
   background: #cdfff4;
 }
-.table-responsive {
-}
+
 .p-card-header {
   text-align: center !important;
   padding-top: 1.5rem;
@@ -317,10 +351,7 @@ export default {
   text-align: center !important;
   font: 1.3em sans-serif;
 }
-.p-panel-content {
-  background: #f3f3f3;
-  height: calc(100vh - 8.6rem) !important;
-}
+
 .p-panel-icons {
   height: 16px !important;
 }

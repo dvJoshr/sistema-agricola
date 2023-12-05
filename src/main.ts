@@ -25,14 +25,19 @@ import Toast from "primevue/toast";
 import ToastService from "primevue/toastservice";
 import LayoutContent from "./components/Layout-content.vue";
 import ApiService from "./services/Api.service";
-
+import ProgressSpinner from "primevue/progressspinner";
+import ColumnGroup from "primevue/columngroup";
 import "/node_modules/primeflex/primeflex.css";
+import Row from "primevue/row";
+import ConfirmDialog from "primevue/confirmdialog";
+import ConfirmationService from "primevue/confirmationservice";
 
 const app = createApp(App);
 
 app.use(router);
 app.use(PrimeVue);
 app.use(ToastService);
+app.use(ConfirmationService);
 app.component("v-panel", Panel);
 app.component("v-menu", Menu);
 app.component("v-sidebar", Sidebar);
@@ -48,6 +53,11 @@ app.component("v-calendar", Calendar);
 app.component("v-dropdown", Dropdown);
 app.component("v-inputnumber", InputNumber);
 app.component("v-toast", Toast);
+app.component("v-progress-spinner", ProgressSpinner);
+app.component("v-column-group", ColumnGroup);
+app.component("v-row", Row);
+app.component("v-confirm-dialog", ConfirmDialog);
+
 //providers
 
 app.provide("api", ApiService());

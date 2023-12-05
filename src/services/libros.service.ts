@@ -34,4 +34,28 @@ export default {
   async saveMayorizacion(model: Mayorizacion) {
     return await api().post("mayorizacion", model);
   },
+
+  async getBooksDetailsToStates(
+    codigo: string,
+    codigo_two: string,
+    libro: string
+  ) {
+    return await api().get(`details/estados/${codigo}&${codigo_two}&${libro}`);
+  },
+
+  deleteDetailAccount(id: number) {
+    return api().delete(`details/${id}`);
+  },
+
+  updateBook(model: any) {
+    return api().put("books", model);
+  },
+
+  deleteBook(id: string) {
+    return api().delete(`books/${id}`);
+  },
+
+  updateDetails(model: any, id: number) {
+    return api().put(`/details/update/${id}`, model);
+  },
 };

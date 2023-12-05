@@ -1,10 +1,7 @@
 <template>
-  <div class="h-full m-2 bg-white border-round-md pb-1">
+  <div class="h-full bg-white border-round-md pb-1">
     <TopMenu />
-    <div
-      class="overflow: hidden;"
-      style="height: calc(100vh - 4.5rem) !important"
-    >
+    <div class="overflow: hidden;">
       <div class="flex relative lg:static surface-ground">
         <SideBar />
         <div class="flex flex-column relative flex-auto m-2">

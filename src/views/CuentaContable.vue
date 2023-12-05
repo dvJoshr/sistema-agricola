@@ -1,6 +1,7 @@
 <template>
   <v-panel header="Cuenta contable">
     <v-toast />
+    <v-confirm-dialog></v-confirm-dialog>
     <div>
       <v-button label="Agregar" size="small" @click="visible = true"></v-button>
     </div>
@@ -8,11 +9,36 @@
       :value="products"
       paginator
       :rows="9"
+      :rowsPerPageOptions="[10, 20, 50]"
       class="p-datatable-sm"
     >
       <v-datatable-column field="codigo" header="Código"></v-datatable-column>
       <v-datatable-column field="titulo" header="Título"></v-datatable-column>
       <v-datatable-column field="detalle" header="Detalle"></v-datatable-column>
+      <v-datatable-column field="opciones" header="Opciones">
+        <template #body="slotProps">
+          <v-button
+            type="button"
+            icon="pi pi-pencil"
+            severity="warning"
+            class="mr-2 p-0"
+            rounded
+            text
+            @click="editCuenta(slotProps.data)"
+          >
+          </v-button>
+          <v-button
+            type="button"
+            icon="pi pi-trash"
+            text
+            class="p-0 h-1"
+            severity="danger"
+            rounded
+            @click="eliminarCuenta(slotProps.data)"
+          >
+          </v-button>
+        </template>
+      </v-datatable-column>
     </v-datatable-table>
   </v-panel>
   <div>
@@ -24,8 +50,8 @@
       :draggable="false"
     >
       <form action="">
-        <div class="w-full formgroup-inline justify-content-evenly pl-2 pr-2">
-          <div>
+        <div class="w-full formgroup-inline justify-content-evenly pl-4 pr-4">
+          <div class="w-full">
             <label for="codigo" class="block text-900 font-medium mb-2">
               Código
             </label>
@@ -44,7 +70,7 @@
               }}</small>
             </div>
           </div>
-          <div>
+          <div class="w-full">
             <label for="titulo" class="block text-900 font-medium mb-2"
               >Título</label
             >
@@ -75,13 +101,14 @@
             class="w-full"
             v-model="detalleEvents.detalleValue"
           ></v-textarea>
-          <small id="text-error" class="p-error">{{
-            detalleErrorMessage || "&nbsp;"
-          }}</small>
         </div>
       </form>
       <div class="w-full flex justify-content-evenly pl-2 pr-2 mt-4">
-        <v-button type="submit" label="Ingresar" @click="onSubmit()"></v-button>
+        <v-button
+          type="submit"
+          :label="nombreButtom"
+          @click="onSubmit()"
+        ></v-button>
         <v-button
           label="Cancelar"
           severity="danger"
@@ -95,20 +122,20 @@
 // import { CuentasService } from "../services/cuentas.service";
 import { Cuenta } from "@/models/cuenta";
 import CuentasService from "@/services/cuentas.service";
+import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
+import { computed, onMounted, reactive, ref } from "vue";
 
-import { computed, defineComponent, reactive, ref } from "vue";
-export default defineComponent({
+export default {
   name: "cuenta-contable",
-  data() {
-    return {
-      visible: false,
-    };
-  },
   setup() {
     let products = ref([{}]);
     const toast = useToast();
-
+    const confirm = useConfirm();
+    let nombreButtom = ref("Ingresar");
+    let visible = ref(false);
+    let codigo_antiguo = ref("");
+    let eliminar = ref(false);
     const codigoEvents = reactive({
       codigoValue: "",
       codigoError: "",
@@ -123,14 +150,14 @@ export default defineComponent({
     });
 
     const codigoErrorMessage = computed(() => {
-      if (codigoEvents.codigoError !== "") {
-        return codigoEvents.codigoError;
+      if (codigoEvents.codigoValue === "") {
+        return "El código es requerido";
       } else return "";
     });
 
     const tituloErrorMessage = computed(() => {
       if (tituloEvents.tituloError !== "") {
-        return tituloEvents.tituloError;
+        return "El titulo es requerido";
       } else return "";
     });
     const detalleErrorMessage = computed(() => {
@@ -152,18 +179,41 @@ export default defineComponent({
     };
 
     const onSubmit = async () => {
-      if (
-        codigoEvents.codigoValue !== "" &&
-        detalleEvents.detalleValue !== "" &&
-        tituloEvents.tituloValue !== ""
-      ) {
+      if (codigoEvents.codigoValue !== "" && tituloEvents.tituloValue !== "") {
         let cuenta: Cuenta = new Cuenta(
           codigoEvents.codigoValue,
           tituloEvents.tituloValue,
           detalleEvents.detalleValue
         );
+        if (nombreButtom.value === "Editar") {
+          CuentasService.updateAccount({
+            codigo_nuevo: codigoEvents.codigoValue,
+            titulo: tituloEvents.tituloValue,
+            detalle: detalleEvents.detalleValue,
+            codigo_antiguo: codigo_antiguo.value,
+          })
+            .then((data: any) => {
+              toast.add({
+                severity: "success",
+                summary: "Success Message",
+                detail: "La cuenta se actualizó correctamente",
+                life: 3000,
+              });
+              resetForm();
+            })
+            .catch((err) => {
+              toast.add({
+                severity: "error",
+                summary: "Error",
+                detail: "La cuenta no se actualizó correctamente",
+                life: 3000,
+              });
+            })
+            .finally(() => (visible.value = false));
+          return;
+        }
         await saveCuenta(cuenta)
-          .then((data: any) => {
+          .then((data: unknown) => {
             toast.add({
               severity: "success",
               summary: "Success Message",
@@ -173,7 +223,15 @@ export default defineComponent({
             products.value.push(cuenta);
             resetForm();
           })
-          .catch((err) => console.log(err));
+          .catch((err) => {
+            toast.add({
+              severity: "error",
+              summary: "Error",
+              detail: "Error al guardar la cuenta",
+              life: 3000,
+            });
+          })
+          .finally(() => (visible.value = false));
         resetForm();
       } else {
         if (codigoEvents.codigoValue === "") {
@@ -195,6 +253,59 @@ export default defineComponent({
       }
     };
 
+    const getCuentas = () => {
+      CuentasService.getAccount()
+        .then((response) => {
+          products.value = response.data.filter(
+            (cuenta: any) => cuenta.estado === "ACTIVO"
+          );
+        })
+        .catch((err) => console.log(err));
+    };
+
+    const editCuenta = (item: Cuenta) => {
+      codigoEvents.codigoValue = item.codigo;
+      detalleEvents.detalleValue = item.detalle;
+      tituloEvents.tituloValue = item.titulo;
+      visible.value = true;
+      nombreButtom.value = "Editar";
+      codigo_antiguo.value = item.codigo;
+    };
+    const eliminarCuenta = (item: any) => {
+      confirm.require({
+        message: "Desea eliminar este Cuenta?",
+        header: "Confirmar",
+        icon: "pi pi-info-circle",
+        rejectClass: "p-button-text p-button-text",
+        acceptClass: "p-button-danger p-button-text",
+        accept: () => {
+          CuentasService.deleteAccount(item.codigo).then((res: any) => {
+            let index = products.value.indexOf(
+              (cuenta: any) => cuenta.codigo === item.codigo
+            );
+            products.value.splice(index, 1);
+            toast.add({
+              severity: "info",
+              summary: "Confirmar",
+              detail: "Cuenta eliminada",
+              life: 3000,
+            });
+          });
+        },
+        reject: () => {
+          toast.add({
+            severity: "error",
+            summary: "Cancelar",
+            detail: "Cancelar",
+            life: 3000,
+          });
+        },
+      });
+    };
+    onMounted(() => {
+      getCuentas();
+    });
+
     return {
       codigoEvents,
       onSubmit,
@@ -205,22 +316,15 @@ export default defineComponent({
       tituloErrorMessage,
       detalleErrorMessage,
       resetForm,
+      visible,
+      getCuentas,
+      editCuenta,
+      nombreButtom,
+      eliminar,
+      eliminarCuenta,
     };
   },
-  methods: {
-    async getCuentas() {
-      await CuentasService.getAccount()
-        .then((response) => {
-          this.products = response.data;
-        })
-        .catch((err) => console.log(err));
-    },
-  },
-
-  created() {
-    this.getCuentas();
-  },
-});
+};
 </script>
 <style>
 .p-panel-header {
@@ -231,5 +335,9 @@ export default defineComponent({
 .placement-custom {
   top: 4.1rem !important;
   left: calc(100% / 4);
+}
+.p-button.p-button-icon-only.p-button-rounded {
+  height: 1.9rem !important;
+  width: 1.9rem !important;
 }
 </style>

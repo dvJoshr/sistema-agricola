@@ -38,6 +38,7 @@ export default {
       {
         label: "Estados ",
         icon: "pi pi-money-bill",
+        url: "estados-financieros",
       },
     ]);
     return { items };
